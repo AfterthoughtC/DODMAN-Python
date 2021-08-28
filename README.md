@@ -50,6 +50,10 @@ Fig 2: A possible preview image when 2 start points are used.
 ## dodmanbokeh.py
 An attempt at creating the map in bokeh with a more interactive interface. Requires both pathds.csv, pointds.csv and flip meaning.csv to be used.
 
+![Example Bokeh](https://github.com/AfterthoughtC/DODMAN-Python/blob/main/images/Bokeh%20Map%20Preview.png)
+
+Fig 3: How the interactive map looks like on Bokeh.
+
 # Future Plans
 * Allow for a circular boundaries
 * Improve the functions to reduce need for zeropow and hence improve accuracy
