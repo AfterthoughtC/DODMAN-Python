@@ -39,6 +39,14 @@ The following values are to be set by the user before generation:
 
 The algorithm will generate a preview image of the map and two files; pointds.csv (contains information on the generated points) and pathds.csv (contains information on the paths).
 
+![Example Preview Map](https://github.com/AfterthoughtC/DODMAN-Python/blob/main/images/DODMAN%20Preview.png)
+
+Fig 1: A possible preview image generated after running dodman.py. Red point is the last visited point.
+
+![Example Preview Two Start Points](https://github.com/AfterthoughtC/DODMAN-Python/blob/main/images/DODMAN%20Preview%20-%20Multiple%20Start%20Points.png)
+
+Fig 2: A possible preview image when 2 start points are used.
+
 ## dodmanbokeh.py
 An attempt at creating the map in bokeh with a more interactive interface. Requires both pathds.csv, pointds.csv and flip meaning.csv to be used.
 
