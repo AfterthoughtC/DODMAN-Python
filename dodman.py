@@ -21,16 +21,16 @@ size = 5 # to prevent points from being too close to each other, size sets a min
             # within the circle
 zeropow = 12 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
 iterations = 25 # how many times to flip your coin
+#seed = None
 seed = 3 # the seed to use. If none the file will generate its own seed
 flipres = ['H','T'] # the results for flipping the coin
 maxflip = 3 # the maximum number of flips there can be
-#flipres = ['1','2','3','4','5','6'] # the results for flipping the coin
+#flipres = ['1','2','3','4','5','6'] # the results for casting the dice
 #maxflip = 2 # the maximum number of flips there can be
 
 
 
 rng = np.random.default_rng(seed)
-minrad = 5/260*2*np.pi
 #rng = np.random.default_rng()
 
 
