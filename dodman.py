@@ -22,7 +22,7 @@ size = 5 # to prevent points from being too close to each other, size sets a min
 zeropow = 12 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
 iterations = 25 # how many times to flip your coin
 #seed = None
-seed = 3 # the seed to use. If none the file will generate its own seed
+seed = 21103 # the seed to use. If none the file will generate its own seed
 flipres = ['H','T'] # the results for flipping the coin
 maxflip = 3 # the maximum number of flips there can be
 #flipres = ['1','2','3','4','5','6'] # the results for casting the dice
@@ -212,10 +212,9 @@ for i in range(iterations):
             pointlist[current].flips += flip
             print('updated point',pointlist[current].coord(),pointlist[current].flips)
     else:
-        # iterate every point to find the closest touching point
         closestpoint = None
         closestdist = float('+inf')
-        # iterate every line
+        # iterate every pre-existing path to see which has the closest intersection
         for l in range(len(linelist)):
             if current in linelist[l]:
                 # if that line is connecting the current point check the angle between
@@ -240,6 +239,7 @@ for i in range(iterations):
                         closestdist = touchdist
                 # if not check if the current line intersects the other line
                 # if it does add the distance between the 2 points
+        # iterate every point to find the closest touching point
         for p in range(len(pointlist)):
             # ignore if back to current point
             if p == current:
