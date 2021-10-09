@@ -13,7 +13,10 @@ import pandas as pd
 # we start by determining the width and height of the map
 width = 400 # width of the map
 height = 400 # height of the map
-startcoord = [(0.5,0.5)] # if we want to have multiple start coordinates
+startcoord = [(0.25,0.5),(0.75,0.5)] # if we want to have multiple start coordinates
+randcoord = False # Only relevant if there are multiple coordinates.
+                # If True when the next startcoord will be randomly chosen
+                # if False the next startcoord will go in order (ex. startcoord 1, 2, 3)
 maptype = 'square' # 2 types; circle / ellipse and square / rectangle
 angle_no = 12 # if more than 0, will only generate angles whose size is of multiple 2pi/angle_no
 size = 5 # to prevent points from being too close to each other, size sets a minimum diameter
@@ -22,7 +25,7 @@ size = 5 # to prevent points from being too close to each other, size sets a min
 zeropow = 12 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
 iterations = 25 # how many times to flip your coin
 #seed = None
-seed = 21103 # the seed to use. If none the file will generate its own seed
+seed = 210335 # the seed to use. If none the file will generate its own seed
 flipres = ['H','T'] # the results for flipping the coin
 maxflip = 3 # the maximum number of flips there can be
 #flipres = ['1','2','3','4','5','6'] # the results for casting the dice
@@ -178,11 +181,12 @@ for i in range(len(startcoord)):
     pointlist.append(Point(i,(startcoord[i][0]-0.5)*width,(startcoord[i][1]-0.5)*height,'S',10,'Start'))
 linelist = []
 bound = SquareBoundary(width,height)
-if len(startcoord) == 1:
-    current = 0
+if len(startcoord) == 1 or randcoord == False:
+    current_start = 0
 else:
-    current = rng.integers(len(startcoord))
+    current_start = rng.integers(len(startcoord))
 
+current = current_start
 
 for i in range(iterations):
     print('iter',i+1)
@@ -205,9 +209,12 @@ for i in range(iterations):
         elif len(pointlist[current].flips) >= maxflip:
             print('Current point already has '+str(maxflip)+' flips; returning to start')
             if len(startcoord) == 1:
-                current = 0
+                current_start = 0
+            elif randcoord:
+                current_start = rng.integers(len(startcoord))
             else:
-                current = rng.integers(len(startcoord))
+                current_start = (current_start + 1) % len(startcoord)
+            current = current_start
         else:
             pointlist[current].flips += flip
             print('updated point',pointlist[current].coord(),pointlist[current].flips)
