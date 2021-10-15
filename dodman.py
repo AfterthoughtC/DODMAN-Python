@@ -13,19 +13,19 @@ import pandas as pd
 # we start by determining the width and height of the map
 width = 400 # width of the map
 height = 400 # height of the map
-startcoord = [(0.25,0.5),(0.75,0.5)] # if we want to have multiple start coordinates
+startcoord = [(0.5,0.5)] # if we want to have multiple start coordinates
 randcoord = False # Only relevant if there are multiple coordinates.
                 # If True when the next startcoord will be randomly chosen
                 # if False the next startcoord will go in order (ex. startcoord 1, 2, 3)
-maptype = 'square' # 2 types; circle / ellipse and square / rectangle
+maptype = 'ellipse' # 2 types; circle / ellipse and square / rectangle
 angle_no = 12 # if more than 0, will only generate angles whose size is of multiple 2pi/angle_no
 size = 5 # to prevent points from being too close to each other, size sets a minimum diameter
             # this diameter is also used to 'round' path lengths and directions to points that fall
             # within the circle
-zeropow = 12 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
-iterations = 25 # how many times to flip your coin
+zeropow = 11 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
+iterations = 30 # how many times to flip your coin
 #seed = None
-seed = 210335 # the seed to use. If none the file will generate its own seed
+seed = 2335 # the seed to use. If none the file will generate its own seed
 flipres = ['H','T'] # the results for flipping the coin
 maxflip = 3 # the maximum number of flips there can be
 #flipres = ['1','2','3','4','5','6'] # the results for casting the dice
@@ -92,9 +92,32 @@ class EllipseBoundary():
         self.b = height/2
     
     def intersect_disp(self,startpoint,vector):
-        al = -vector[1]
-        bl = vector[0]
-        kl = al*startpoint[0]+bl*startpoint[1]
+        xm = vector[0]
+        ym = vector[1]
+        xo = startpoint[0]
+        yo = startpoint[1]
+        negbcomp = xm*xo*self.b**2 + ym*yo*self.a**2
+        sqrtcomp = 2*xm*xo*ym*yo + (self.b*xm)**2 + (self.a*ym)**2 - (xm*yo)**2 - (xo*ym)**2
+        sqrtcomp = minnumber(sqrtcomp,zeropow)
+        twoacomp = (self.b*xm)**2 + (self.a*ym)**2
+        dp,dn = (-negbcomp+self.a*self.b*sqrtcomp**0.5)/twoacomp,(-negbcomp-self.a*self.b*sqrtcomp**0.5)/twoacomp
+        dp = minnumber(dp,zeropow)
+        dn = minnumber(dn,zeropow)
+        print('dpdn',dp,dn)
+        d = []
+        if dp > 0:
+            d.append(dp)
+        if dn > 0:
+            d.append(dn)
+        if len(d) == 0:
+            d = 0
+        else:
+            d = min(d)
+        print(self.within_boundary(startpoint[0]+d*vector[0],startpoint[1]+d*vector[1]))
+        return(d)
+    
+    def within_boundary(self,xo,yo):
+        return((xo/self.a)**2+(yo/self.b)**2<=1)
 
 # the default point class
 class Point():
@@ -180,7 +203,10 @@ pointlist = []
 for i in range(len(startcoord)):
     pointlist.append(Point(i,(startcoord[i][0]-0.5)*width,(startcoord[i][1]-0.5)*height,'S',10,'Start'))
 linelist = []
-bound = SquareBoundary(width,height)
+if maptype == 'square':
+    bound = SquareBoundary(width,height)
+elif maptype == 'ellipse':
+    bound = EllipseBoundary(width,height)
 if len(startcoord) == 1 or randcoord == False:
     current_start = 0
 else:
