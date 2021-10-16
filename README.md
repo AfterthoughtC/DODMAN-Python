@@ -15,7 +15,7 @@ The following packages are used by the scripts:
 # Additional Features
 The python implementation used here also supports some features over Alfred Valley's DODMAN:
 ## Multiple Start Points
-Rather than being stuck with just one start point, users can set multiple start points within the map. When multiple start points are used, the algorithm will choose a random point from the set to start survey from. When at another point where survey is no longer possible it will randomly choose one of the multiple start points to go back to.
+Rather than being stuck with just one start point, users can set multiple start points within the map. The point that one returns to once no more moves can be made from the current point can be decided either randomly or in order.
 
 # Scripts
 There are two main scripts; dodman.py and dodmanbokeh.py.
