@@ -17,7 +17,7 @@ startcoord = [(0.5,0.5)] # if we want to have multiple start coordinates
 randcoord = False # Only relevant if there are multiple coordinates.
                 # If True when the next startcoord will be randomly chosen
                 # if False the next startcoord will go in order (ex. startcoord 1, 2, 3)
-maptype = 'ellipse' # 2 types; circle / ellipse and square / rectangle
+maptype = 'square' # 2 types; circle / ellipse and square / rectangle
 angle_no = 12 # if more than 0, will only generate angles whose size is of multiple 2pi/angle_no
 size = 5 # to prevent points from being too close to each other, size sets a minimum diameter
             # this diameter is also used to 'round' path lengths and directions to points that fall
@@ -25,7 +25,7 @@ size = 5 # to prevent points from being too close to each other, size sets a min
 zeropow = 11 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
 iterations = 30 # how many times to flip your coin
 #seed = None
-seed = 2335 # the seed to use. If none the file will generate its own seed
+seed = None # the seed to use. If none the file will generate its own seed
 flipres = ['H','T'] # the results for flipping the coin
 maxflip = 3 # the maximum number of flips there can be
 #flipres = ['1','2','3','4','5','6'] # the results for casting the dice
@@ -387,5 +387,7 @@ for p in range(len(pointlist)):
     #plt.text(P.x+0.01*width,P.y+0.01*height,str(P.index))
 pointds = pd.DataFrame(pointds)
 pointds.to_csv('pointds.csv',index=False)
-plt.show() 
+plt.savefig('plotimg.png')
+plt.show()
+input("Map generated and saved. Press enter to finish the script.")
     
