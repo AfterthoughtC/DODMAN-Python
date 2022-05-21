@@ -38,7 +38,7 @@ The following values are to be set by the user before generation:
 |flipres|list of strings|The possible results of the flips.|
 |maxflip|integer|Maximum number of flips a point can have.|
 
-The algorithm will generate a preview image of the map and two files; pointds.csv (contains information on the generated points) and pathds.csv (contains information on the paths).
+The algorithm will generate a preview image of the map and three files; pointds.csv (contains information on the generated points), pathds.csv (contains information on the paths) and plotimg.png (the image file in png format).
 
 ![Example Preview Map](https://github.com/AfterthoughtC/DODMAN-Python/blob/main/images/DODMAN%20Preview.png)
 
