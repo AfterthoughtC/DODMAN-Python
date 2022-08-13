@@ -10,31 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# we start by determining the width and height of the map
-width = 400 # width of the map
-height = 400 # height of the map
-startcoord = [(0.5,0.5)] # if we want to have multiple start coordinates
-randcoord = False # Only relevant if there are multiple coordinates.
-                # If True when the next startcoord will be randomly chosen
-                # if False the next startcoord will go in order (ex. startcoord 1, 2, 3)
-maptype = 'square' # 2 types; circle / ellipse and square / rectangle
-angle_no = 12 # if more than 0, will only generate angles whose size is of multiple 2pi/angle_no
-size = 5 # to prevent points from being too close to each other, size sets a minimum diameter
-            # this diameter is also used to 'round' path lengths and directions to points that fall
-            # within the circle
-zeropow = 11 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
-iterations = 30 # how many times to flip your coin
-#seed = None
-seed = None # the seed to use. If none the file will generate its own seed
-flipres = ['H','T'] # the results for flipping the coin
-maxflip = 3 # the maximum number of flips there can be
-#flipres = ['1','2','3','4','5','6'] # the results for casting the dice
-#maxflip = 2 # the maximum number of flips there can be
-
-
-
-rng = np.random.default_rng(seed)
-#rng = np.random.default_rng()
+from typing import Union
+from collections.abc import Sequence
 
 
 def minnumber(number,zeropow):
@@ -50,7 +27,7 @@ def generate_angle(angle_no,rng = np.random.default_rng()):
     return(2*np.pi/angle_no*rng.integers(0,angle_no))
 
 
-def generate_vector(angle):
+def generate_vector(angle,zeropow):
     x = minnumber(np.cos(angle),zeropow)
     y = minnumber(np.sin(angle),zeropow)
     return(np.array([x,y]))
@@ -64,7 +41,13 @@ class SquareBoundary():
         self.ymin = -height/2
         self.ymax = height/2
     
-    def intersect_disp(self,startpoint,vector):
+    def get_width(self):
+        return(self.xmax-self.xmin)
+    
+    def get_height(self):
+        return(self.ymax-self.ymin)
+    
+    def intersect_disp(self,startpoint,vector,zeropow):
         dx = self.max_disp(startpoint[0],
                            vector[0],
                            self.xmin,
@@ -91,19 +74,52 @@ class EllipseBoundary():
         self.a = width/2
         self.b = height/2
     
-    def intersect_disp(self,startpoint,vector):
+    def get_width(self):
+        return(self.a*2)
+    
+    def get_height(self):
+        return(self.b*2)
+    
+    def intersect_disp(self,startpoint,vector,zeropow):
         xm = vector[0]
         ym = vector[1]
         xo = startpoint[0]
         yo = startpoint[1]
+        print([xm,ym],[xo,yo])
+        quad_a = self.b*self.b*xm*xm+self.a*self.a*ym*ym
+        quad_b = 2*(self.b*self.b*xo*xm+self.a*self.a*yo*ym)
+        quad_c = self.b*self.b*xo*xo+self.a*self.a*yo*yo-self.a*self.a*self.b*self.b
+        print(quad_a,quad_b,quad_c)
+        sqrtpart = quad_b*quad_b - 4*quad_a*quad_c
+        sqrtpart = minnumber(sqrtpart,zeropow)
+        if sqrtpart < 0:
+            print('Square root part when calculating displacement is <0.')
+            print('Taking it as no possible d value that can give an intersect')
+            return(0)
+        dp = (-quad_b + sqrtpart**0.5)/2/quad_a
+        dn = (-quad_b - sqrtpart**0.5)/2/quad_a
+        d = []
+        if dp > 0:
+            d.append(dp)
+        if dn > 0:
+            d.append(dn)
+        if len(d) == 0:
+            d.append(0)
+        return(min(d))
+        """
         negbcomp = xm*xo*self.b**2 + ym*yo*self.a**2
         sqrtcomp = 2*xm*xo*ym*yo + (self.b*xm)**2 + (self.a*ym)**2 - (xm*yo)**2 - (xo*ym)**2
         sqrtcomp = minnumber(sqrtcomp,zeropow)
         twoacomp = (self.b*xm)**2 + (self.a*ym)**2
-        dp,dn = (-negbcomp+self.a*self.b*sqrtcomp**0.5)/twoacomp,(-negbcomp-self.a*self.b*sqrtcomp**0.5)/twoacomp
+        dp = (-negbcomp+self.a*self.b*sqrtcomp**0.5)/twoacomp
+        if pd.isna(dp):
+            print(negbcomp,self.a,self.b,sqrtcomp,twoacomp)
+            print(-negbcomp+self.a*self.b*sqrtcomp**0.5)
+            1/0
+        dn = (-negbcomp-self.a*self.b*sqrtcomp**0.5)/twoacomp
         dp = minnumber(dp,zeropow)
         dn = minnumber(dn,zeropow)
-        print('dpdn',dp,dn)
+        #print('dpdn',dp,dn)
         d = []
         if dp > 0:
             d.append(dp)
@@ -113,7 +129,7 @@ class EllipseBoundary():
             d = 0
         else:
             d = min(d)
-        print(self.within_boundary(startpoint[0]+d*vector[0],startpoint[1]+d*vector[1]))
+        """
         return(d)
     
     def within_boundary(self,xo,yo):
@@ -121,12 +137,12 @@ class EllipseBoundary():
 
 # the default point class
 class Point():
-    def __init__(self,index,x,y,flips,size,pointtype):
+    def __init__(self,index,x,y,flips,pointrad,pointtype,zeropow):
         self.index = index
         self.x = minnumber(x,zeropow)
         self.y = minnumber(y,zeropow)
         self.flips = flips
-        self.size = size
+        self.pointrad = pointrad
         self.pointtype = pointtype
         
     def coord(self):
@@ -139,7 +155,7 @@ class Point():
         top = (P2[0]-P1[0])*(P1[1]-P0[1])-(P1[0]-P0[0])*(P2[1]-P1[1])
         bottom = ((P2[0]-P1[0])**2+(P2[1]-P1[1])**2)**0.5
         sdist = abs(top)/bottom
-        if sdist > self.size:
+        if sdist > self.pointrad:
             return(False,None)
         touchpoint = P1+sum((P0-P1)*vector)*vector
         totouch = touchpoint - P1
@@ -153,7 +169,7 @@ class Point():
         return(dist>=0,dist)
 
 
-def check_lines_intersect(P1,P2,P3,P4):
+def check_lines_intersect(P1,P2,P3,P4,zeropow):
     
     V1 = P2-P1
     D1 = ((P1[0]-P2[0])**2 + (P1[1]-P2[1])**2)**0.5
@@ -198,196 +214,301 @@ def check_lines_intersect(P1,P2,P3,P4):
     return(False,d1)
 
 
+int_or_float = Union[int,float]
 
-pointlist = []
-for i in range(len(startcoord)):
-    pointlist.append(Point(i,(startcoord[i][0]-0.5)*width,(startcoord[i][1]-0.5)*height,'S',10,'Start'))
-linelist = []
-if maptype == 'square':
-    bound = SquareBoundary(width,height)
-elif maptype == 'ellipse':
-    bound = EllipseBoundary(width,height)
-if len(startcoord) == 1 or randcoord == False:
-    current_start = 0
-else:
-    current_start = rng.integers(len(startcoord))
 
-current = current_start
-
-for i in range(iterations):
-    print('iter',i+1)
-    print('current',current)
-    # generate the angle and vector
-    angle = generate_angle(angle_no,rng)
-    flip = flipres[rng.integers(len(flipres))]
-    vector = generate_vector(angle)
-    print('current point',pointlist[current].coord(),pointlist[current].flips)
-    print('vector',vector)
-    # create the maximum distance
-    maxd = bound.intersect_disp(pointlist[current].coord(),vector)
+class DodmanGen():
     
-    if abs(maxd) <= size:
+    def __init__(self,width:int_or_float=400,height:int_or_float=400,
+                 start_coord=[(0.5,0.5)],random_start:bool=False,
+                 map_shape:str='ellipse',angle_no:int=12,point_rad:int_or_float=20,
+                 zero_pow:int_or_float=11,seed:Union[int,type(None)]=None,
+                 flip_results:Union[tuple,list]=['H','T'],max_label_length:int=3):
+        #self.width = width
+        #self.height = height
+        self.point_list = [] # for storing the list of points
+        self.start_count = len(start_coord) # how many possible start points
+        for i in range(len(start_coord)):
+            self.point_list.append(Point(i,(start_coord[i][0]-0.5)*width,(start_coord[i][1]-0.5)*height,'S',10,'Start',zero_pow))
+        self.path_list = [] # for storing the list of paths
+        
+        # bound is the shape of the map
+        # width and height will be stored inside the bound
+        self.random_start = random_start
+        if map_shape == 'ellipse':
+            self.bound = EllipseBoundary(width,height)
+        else:
+            self.bound = SquareBoundary(width,height)
+        # angle_no is how many possible angles it can generate
+        # if angle_no is zero, it is a uniform distribution
+        self.angle_no = angle_no
+        # point_rad is the radius of each point
+        self.point_rad = point_rad
+        # maximum possible 10^-zero_pow value before a number gets snapped to zero
+        self.zero_pow = zero_pow
+        # the random number generator
+        self.rng = np.random.default_rng(seed)
+        self.flip_results = flip_results
+        self.max_label_length = max_label_length
+        
+        if len(start_coord) == 1 or random_start == False:
+            self.current_start = 0
+        else:
+            self.current_start = self.rng.integers(len(self.start_count))
+        
+        # current coordinate
+        self.current = self.current_start
+        
+        # storing the rolls made
+        self.rolls_made = []
+    
+    def get_width(self):
+        return(self.bound.get_width())
+    
+    def get_height(self):
+        return(self.bound.get_height())
+
+    def flip_once(self,printmid=False):
+        this_roll = []
+        # generate the angle and vector
+        angle = generate_angle(self.angle_no,self.rng)
+        flip = self.flip_results[self.rng.integers(len(self.flip_results))]
+        vector = generate_vector(angle,self.zero_pow)
+        this_roll.append((angle,flip))
+        
+        if printmid:
+            print('current point',self.point_list[self.current].coord(),self.point_list[self.current].flips)
+            print('vector',vector)
+            
+        # create the maximum distance
+        maxd = self.bound.intersect_disp(self.point_list[self.current].coord(),vector,self.zero_pow)
+
         # if that displacement will take us off the paper / will not exit the
         # point 'collision shape', add a point
-        print('The vector will not take us very far from the current node')
-        if pointlist[current].flips == 'S':
-            print('Start point will not be changed')
-        elif len(pointlist[current].flips) >= maxflip:
-            print('Current point already has '+str(maxflip)+' flips; returning to start')
-            if len(startcoord) == 1:
-                current_start = 0
-            elif randcoord:
-                current_start = rng.integers(len(startcoord))
+        if abs(maxd)<=self.point_rad:
+            if printmid:
+                print('The vector will not take us very far from the current node')
+            
+            # do not change start point if we are already back at the start
+            if self.point_list[self.current].flips == 'S':
+                if printmid:
+                    print('Start point will not be changed')
+            
+            # if we are at a non-start point, check if we can add more flips
+            # if we cannot return to the start
+            elif len(self.point_list[self.current].flips) >= self.max_label_length:
+                if printmid:
+                    print('Current point already has %s flips; returning to start'%str(len(self.point_list[self.current].flips)))
+                if self.start_count == 1:
+                    self.current_start = 0
+                elif self.random_start:
+                    self.current_start = self.rng.integers(self.start_count)
+                    this_roll.append(self.current_start)
+                else:
+                    self.current_start = (self.current_start + 1) % self.start_count
+                self.current = self.current_start
+            # if we can, add flip
             else:
-                current_start = (current_start + 1) % len(startcoord)
-            current = current_start
+                self.point_list[self.current].flips += flip
+                if printmid:
+                    print('updated point',self.point_list[self.current].coord(),self.point_list[self.current].flips)
+        # if we can move, move
         else:
-            pointlist[current].flips += flip
-            print('updated point',pointlist[current].coord(),pointlist[current].flips)
-    else:
-        closestpoint = None
-        closestdist = float('+inf')
-        # iterate every pre-existing path to see which has the closest intersection
-        for l in range(len(linelist)):
-            if current in linelist[l]:
-                # if that line is connecting the current point check the angle between
-                # the generated angle and connected angle
-                # or we can just ignore since the 'does it touch node' part already
-                # handles this
-                pass
-            else:
-                P1ac = pointlist[current].coord()
-                P1bc = P1ac + vector*maxd
-                P2a,P2b = linelist[l]
-                P2ac = pointlist[P2a].coord()
-                P2bc = pointlist[P2b].coord()
-                
-                
-                linetouch,touchdist = check_lines_intersect(P1ac,P1bc,P2ac,P2bc)
-                if linetouch:
-                    if touchdist < closestdist:
-                        print(P2a,P2b)
-                        print('line intersects at dist',touchdist)
-                        closestpoint = ('Line',l)
-                        closestdist = touchdist
-                # if not check if the current line intersects the other line
-                # if it does add the distance between the 2 points
-        # iterate every point to find the closest touching point
-        for p in range(len(pointlist)):
-            # ignore if back to current point
-            if p == current:
-                continue
-            cantouch,touchdist = pointlist[p].point_touch(pointlist[current].coord(),vector)
-            if cantouch:
-                # if there is a closer point that can touch add that point
-                if closestdist > touchdist:
-                    closestpoint = ('Point',p)
-                    closestdist = touchdist
-                    print('will collide with point',p,'(',pointlist[p].coord(),')')
-                # point intersections take precedence over line intersections
-                elif minnumber(closestdist-touchdist,zeropow) >= 0:
-                    if closestpoint[0] == 'Line':
+            closestpoint = None
+            closestdist = float('+inf')
+            # iterate every pre-existing path to see which has the closest intersection
+            for l in range(len(self.path_list)):
+                if self.current in self.path_list[l]:
+                    # if that line is connecting the current point check the angle between
+                    # the generated angle and connected angle
+                    # or we can just ignore since the 'does it touch node' part already
+                    # handles this
+                    pass
+                else:
+                    # if not check if the current line intersects the other line
+                    P1ac = self.point_list[self.current].coord()
+                    P1bc = P1ac + vector*maxd
+                    P2a,P2b = self.path_list[l]
+                    P2ac = self.point_list[P2a].coord()
+                    P2bc = self.point_list[P2b].coord()
+                    
+                    linetouch,touchdist = check_lines_intersect(P1ac,P1bc,P2ac,P2bc,self.zero_pow)
+                    if linetouch:
+                        # if it does find the distance between the point and line
+                        if touchdist < closestdist:
+                            if printmid:
+                                print(P2a,P2b)
+                                print('line intersects at dist',touchdist)
+                            closestpoint = ('Line',l)
+                            closestdist = touchdist
+            # iterate every point to find the closest touching point
+            for p in range(len(self.point_list)):
+                # ignore if back to current point
+                if p == self.current:
+                    continue
+                cantouch,touchdist = self.point_list[p].point_touch(self.point_list[self.current].coord(),vector)
+                if cantouch:
+                    # if there is a closer point that can touch add that point
+                    if closestdist > touchdist:
                         closestpoint = ('Point',p)
                         closestdist = touchdist
-                        print('will collide with point',p,'(',pointlist[p].coord(),')')
-        newpoint = pointlist[current].coord()+vector*maxd
-        # if closets point is a line, split the line at the touch point
-        # then add a point there
-        if type(closestpoint) == tuple:
-            inttype,ind = closestpoint
-            if inttype == 'Line':
-                index = len(pointlist)
-                pointlist.append(Point(index,
-                                       pointlist[current].coord()[0]+closestdist*vector[0],
-                                       pointlist[current].coord()[1]+closestdist*vector[1],
-                                       flip,size,
-                                       'Intersection'))
-                cutlines,cutlinee = linelist[ind]
-                linelist[ind] = (cutlines,index)
-                linelist.append((index,cutlinee))
-                linelist.append((current,index))
-            if inttype == 'Point':
-                goback = False
-                index = ind
-                #pointlist[index].flips += flip
-                if (current,index) not in linelist and (index,current) not in linelist:
-                    linelist.append((current,index))
-                else:
-                    print('no new path')
-                if pointlist[index].flips == 'S':
-                    print('went back to the start')
-                elif len(pointlist[index].flips) >= maxflip:
-                    print('revisiting a place with '+str(maxflip)+' flips - back to the start')
-                    goback = True
-                else:
-                    pointlist[index].flips += flip
-        else:
-            index = len(pointlist)
-            pointlist.append(Point(index,newpoint[0],newpoint[1],flip,size,'Termini'))
-            linelist.append((current,index))
-
-        # change termini to node if there are more than 2 connecting paths
-        prevnode = {}
-        if pointlist[current].pointtype == 'Termini':
-            prevnode[current] = 0
-        if pointlist[index].pointtype == 'Termini':
-            prevnode[index] = 0
-        if len(prevnode) > 0:
-            for lines in linelist:
-                for prev in prevnode:
-                    if prev in lines:
-                        prevnode[prev] += 1
-        for prev in prevnode:
-            if prevnode[prev] > 1:
-                pointlist[prev].pointtype = 'Node'
-            
-        current = index
-        if type(closestpoint) == tuple:
-            if inttype == 'Line':
-                print('cut line',(cutlines,cutlinee),'to',(cutlines,index),'and',(index,cutlinee))
-                print('new intersection',pointlist[current].coord(),pointlist[current].flips)
-            if inttype == 'Point':
-                print('revisit point',pointlist[current].coord(),pointlist[current].flips)
-                if goback:
-                    print('went back to the start as visited point already had 3 flips')
-                    if len(startcoord) == 1:
-                        current = 0
+                        if printmid:
+                            print('will collide with point %s (%s)'%(p,self.point_list[p].coord()))
+                    # point intersections take precedence over line intersections
+                    elif minnumber(closestdist-touchdist,self.zero_pow) >= 0:
+                        if closestpoint[0] == 'Line':
+                            closestpoint = ('Point',p)
+                            closestdist = touchdist
+                            if printmid:
+                                print('will collide with point %s (%s)'%(p,self.point_list[p].coord()))
+            newpoint = self.point_list[self.current].coord()+vector*maxd
+            # if closets point is a line, split the line at the touch point
+            # then add a point there
+            if type(closestpoint) == tuple:
+                inttype,ind = closestpoint
+                if inttype == 'Line':
+                    index = len(self.point_list)
+                    self.point_list.append(Point(index,
+                                           self.point_list[self.current].coord()[0]+closestdist*vector[0],
+                                           self.point_list[self.current].coord()[1]+closestdist*vector[1],
+                                           flip,self.point_rad,
+                                           'Intersection',self.zero_pow))
+                    cutlines,cutlinee = self.path_list[ind]
+                    self.path_list[ind] = (cutlines,index)
+                    self.path_list.append((index,cutlinee))
+                    self.path_list.append((self.current,index))
+                if inttype == 'Point':
+                    goback = False
+                    index = ind
+                    #pointlist[index].flips += flip
+                    if (self.current,index) not in self.path_list and (index,self.current) not in self.path_list:
+                        self.path_list.append((self.current,index))
                     else:
-                        current = rng.integers(len(startcoord))
+                        if printmid:
+                            print('no new path')
+                    if self.point_list[index].flips == 'S':
+                        if printmid:
+                            print('went back to the start')
+                    elif len(self.point_list[index].flips) >= self.max_label_length:
+                        if printmid:
+                            print('revisiting a place with %s flips - back to the start'%self.max_label_length)
+                        goback = True
+                    else:
+                        self.point_list[index].flips += flip
+            else:
+                index = len(self.point_list)
+                self.point_list.append(Point(index,newpoint[0],newpoint[1],flip,self.point_rad,'Termini',self.zero_pow))
+                self.path_list.append((self.current,index))
+                
+            # change termini to node if there are more than 2 connecting paths
+            prevnode = {}
+            if self.point_list[self.current].pointtype == 'Termini':
+                prevnode[self.current] = 0
+            if self.point_list[index].pointtype == 'Termini':
+                prevnode[index] = 0
+            if len(prevnode) > 0:
+                for lines in self.path_list:
+                    for prev in prevnode:
+                        if prev in lines:
+                            prevnode[prev] += 1
+            for prev in prevnode:
+                if prevnode[prev] > 1:
+                    self.point_list[prev].pointtype = 'Node'
+                
+            self.current = index
+            if type(closestpoint) == tuple:
+                if inttype == 'Line':
+                    if printmid:
+                        print('cut line',(cutlines,cutlinee),'to',(cutlines,index),'and',(index,cutlinee))
+                        print('new intersection',self.point_list[self.current].coord(),self.point_list[self.current].flips)
+                if inttype == 'Point':
+                    if printmid:
+                        print('revisit point',self.point_list[self.current].coord(),self.point_list[self.current].flips)
+                    if goback:
+                        if printmid:
+                            print('went back to the start as visited point already had %s flips'%self.max_label_length)
+                        if self.start_count == 1:
+                            self.current = 0
+                        else:
+                            self.current = self.rng.integers(self.start_count)
+                            this_roll.append(self.current)
+            else:
+                if printmid:
+                    print('new point',self.point_list[self.current].coord(),self.point_list[self.current].flips)
+        if printmid:
+            print('Flips Made:',this_roll)
+        self.rolls_made.append(this_roll)
+
+
+
+if __name__ == '__main__':
+    
+    # we start by determining the width and height of the map
+    width = 400 # width of the map
+    height = 400 # height of the map
+    start_coord = [(0.5,0.5)] # if we want to have multiple start coordinates
+    random_start = False # Only relevant if there are multiple coordinates.
+                    # If True when the next startcoord will be randomly chosen
+                    # if False the next startcoord will go in order (ex. startcoord 1, 2, 3)
+    map_shape = 'ellipse' # 2 types; circle / ellipse and square / rectangle
+    angle_no = 12 # if more than 0, will only generate angles whose size is of multiple 2pi/angle_no
+    point_rad = 20 # to prevent points from being too close to each other, size sets a minimum diameter
+                # this diameter is also used to 'round' path lengths and directions to points that fall
+                # within the circle
+    zero_pow = 11 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
+    rollno = 20 # how many times to flip your coin/ roll your dice
+    #seed = None
+    seed = None # the seed to use. If none the file will generate its own seed
+    flip_results = ['H','T'] # the results for flipping the coin
+    max_label_length = 3 # the maximum number of flip results a label can store
+    #flip_results = ['1','2','3','4','5','6'] # the results for casting the dice
+    #max_label_length = 2 # the maximum number of flip results a label can store
+    
+    
+    dodgen = DodmanGen(width=width,height=height,
+                       start_coord=start_coord,random_start=random_start,
+                       map_shape=map_shape,angle_no=angle_no,point_rad=point_rad,
+                       zero_pow=zero_pow,seed=seed,flip_results=flip_results,
+                       max_label_length=max_label_length)
+    while len(dodgen.rolls_made) < 20:
+        dodgen.flip_once(True)
+        print()
+    path_list = dodgen.path_list
+    point_list = dodgen.point_list
+    current = dodgen.current
+    width = dodgen.get_width()
+    height = dodgen.get_height()
+    
+    pathds = []
+    pointds = []
+    # draw each line
+    for l in range(len(path_list)):
+        P1,P2 = path_list[l]
+        P1 = point_list[P1].coord()
+        P2 = point_list[P2].coord()
+        pathds.append({'Line Index':l,'Point Index 1':path_list[l][0],'Point Index 2':path_list[l][1]})
+        plt.plot([P1[0],P2[0]],[P1[1],P2[1]],color='k',linewidth=1)
+    
+    pathds = pd.DataFrame(pathds)
+    #pathds.to_csv('pathds.csv',index=False)
+    
+    for p in range(len(point_list)):
+        P = point_list[p]
+        print('Point',p,P.coord(),P.pointtype,P.flips)
+        if p == current:
+            color = 'r'
         else:
-            print('new point',pointlist[current].coord(),pointlist[current].flips)
-    print()
-
-pathds = []
-pointds = []
-# draw each line
-for l in range(len(linelist)):
-    P1,P2 = linelist[l]
-    P1 = pointlist[P1].coord()
-    P2 = pointlist[P2].coord()
-    pathds.append({'Line Index':l,'Point Index 1':linelist[l][0],'Point Index 2':linelist[l][1]})
-    plt.plot([P1[0],P2[0]],[P1[1],P2[1]],color='k',linewidth=1)
-
-pathds = pd.DataFrame(pathds)
-pathds.to_csv('pathds.csv',index=False)
-
-for p in range(len(pointlist)):
-    P = pointlist[p]
-    print('Point',p,P.coord(),P.pointtype,P.flips)
-    if p == current:
-        color = 'r'
-    else:
-        color = 'b'
-    if P.pointtype == 'Intersection':
-        plt.scatter(P.x,P.y,marker='o',edgecolors=color,facecolors='none',s=60)
-    else:
-        plt.plot(P.x,P.y,marker='o',color=color)
-    pointds.append({'Point Index':p,'Flips':P.flips,'X':P.x,'Y':P.y,'Point Type':P.pointtype})
-    plt.text(P.x+0.01*width,P.y+0.01*height,str(P.flips))
-    #plt.text(P.x+0.01*width,P.y+0.01*height,str(P.index))
-pointds = pd.DataFrame(pointds)
-pointds.to_csv('pointds.csv',index=False)
-plt.savefig('plotimg.png')
-plt.show()
-input("Map generated and saved. Press enter to finish the script.")
+            color = 'b'
+        if P.pointtype == 'Intersection':
+            plt.scatter(P.x,P.y,marker='o',edgecolors=color,facecolors='none',s=60)
+        else:
+            plt.plot(P.x,P.y,marker='o',color=color)
+        pointds.append({'Point Index':p,'Flips':P.flips,'X':P.x,'Y':P.y,'Point Type':P.pointtype})
+        plt.text(P.x+0.01*width,P.y+0.01*height,str(P.flips))
+        #plt.text(P.x+0.01*width,P.y+0.01*height,str(P.index))
+    pointds = pd.DataFrame(pointds)
+    #pointds.to_csv('pointds.csv',index=False)
+    #plt.savefig('plotimg.png')
+    plt.show()
+    print("Map generated and saved. Press enter to finish the script.")
     
