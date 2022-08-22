@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from typing import Union
-from collections.abc import Sequence
 
 
 def minnumber(number,zeropow):
@@ -490,7 +489,7 @@ if __name__ == '__main__':
         plt.plot([P1[0],P2[0]],[P1[1],P2[1]],color='k',linewidth=1)
     
     pathds = pd.DataFrame(pathds)
-    #pathds.to_csv('pathds.csv',index=False)
+    pathds.to_csv('pathds.csv',index=False)
     
     for p in range(len(point_list)):
         P = point_list[p]
@@ -507,8 +506,8 @@ if __name__ == '__main__':
         plt.text(P.x+0.01*width,P.y+0.01*height,str(P.flips))
         #plt.text(P.x+0.01*width,P.y+0.01*height,str(P.index))
     pointds = pd.DataFrame(pointds)
-    #pointds.to_csv('pointds.csv',index=False)
-    #plt.savefig('plotimg.png')
+    pointds.to_csv('pointds.csv',index=False)
+    plt.savefig('plotimg.png')
     plt.show()
     print("Map generated and saved. Press enter to finish the script.")
     
