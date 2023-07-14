@@ -13,8 +13,8 @@ import pandas as pd
 from typing import Union
 
 
-def minnumber(number,zeropow):
-    if abs(number) < 10**-zeropow:
+def minnumber(number,epsilon):
+    if abs(number) < epsilon:
         return(0)
     return(number)
 
@@ -26,9 +26,9 @@ def generate_angle(angle_no,rng = np.random.default_rng()):
     return(2*np.pi/angle_no*rng.integers(0,angle_no))
 
 
-def generate_vector(angle,zeropow):
-    x = minnumber(np.cos(angle),zeropow)
-    y = minnumber(np.sin(angle),zeropow)
+def generate_vector(angle,epsilon):
+    x = minnumber(np.cos(angle),epsilon)
+    y = minnumber(np.sin(angle),epsilon)
     return(np.array([x,y]))
 
 
@@ -46,7 +46,7 @@ class SquareBoundary():
     def get_height(self):
         return(self.ymax-self.ymin)
     
-    def intersect_disp(self,startpoint,vector,zeropow):
+    def intersect_disp(self,startpoint,vector,epsilon):
         dx = self.max_disp(startpoint[0],
                            vector[0],
                            self.xmin,
@@ -79,7 +79,7 @@ class EllipseBoundary():
     def get_height(self):
         return(self.b*2)
     
-    def intersect_disp(self,startpoint,vector,zeropow):
+    def intersect_disp(self,startpoint,vector,epsilon):
         xm = vector[0]
         ym = vector[1]
         xo = startpoint[0]
@@ -90,7 +90,7 @@ class EllipseBoundary():
         quad_c = self.b*self.b*xo*xo+self.a*self.a*yo*yo-self.a*self.a*self.b*self.b
         print(quad_a,quad_b,quad_c)
         sqrtpart = quad_b*quad_b - 4*quad_a*quad_c
-        sqrtpart = minnumber(sqrtpart,zeropow)
+        sqrtpart = minnumber(sqrtpart,epsilon)
         if sqrtpart < 0:
             print('Square root part when calculating displacement is <0.')
             print('Taking it as no possible d value that can give an intersect')
@@ -136,10 +136,10 @@ class EllipseBoundary():
 
 # the default point class
 class Point():
-    def __init__(self,index,x,y,flips,pointrad,pointtype,zeropow):
+    def __init__(self,index,x,y,flips,pointrad,pointtype,epsilon):
         self.index = index
-        self.x = minnumber(x,zeropow)
-        self.y = minnumber(y,zeropow)
+        self.x = minnumber(x,epsilon)
+        self.y = minnumber(y,epsilon)
         self.flips = flips
         self.pointrad = pointrad
         self.pointtype = pointtype
@@ -168,7 +168,7 @@ class Point():
         return(dist>=0,dist)
 
 
-def check_lines_intersect(P1,P2,P3,P4,zeropow):
+def check_lines_intersect(P1,P2,P3,P4,epsilon):
     
     V1 = P2-P1
     D1 = ((P1[0]-P2[0])**2 + (P1[1]-P2[1])**2)**0.5
@@ -189,10 +189,10 @@ def check_lines_intersect(P1,P2,P3,P4,zeropow):
     k2 = a2*P3[0]+b2*P3[1]
     numerator = k1*a2-k2*a1
     denominator = b1*a2-b2*a1
-    if abs(denominator) <= 10**-zeropow:
+    if abs(denominator) <= epsilon:
         return(False,None)
     ym = numerator/denominator
-    if abs(a1) > 10**-zeropow:
+    if abs(a1) > epsilon:
         xm = (k1-b1*ym)/a1
     else:
         xm = (k2-b2*ym)/a2
@@ -221,14 +221,14 @@ class DodmanGen():
     def __init__(self,width:int_or_float=400,height:int_or_float=400,
                  start_coord=[(0.5,0.5)],random_start:bool=False,
                  map_shape:str='ellipse',angle_no:int=12,point_rad:int_or_float=20,
-                 zero_pow:int_or_float=11,seed:Union[int,type(None)]=None,
+                 epsilon:int_or_float=10**-11,seed:Union[int,type(None)]=None,
                  flip_results:Union[tuple,list]=['H','T'],max_label_length:int=3):
         #self.width = width
         #self.height = height
         self.point_list = [] # for storing the list of points
         self.start_count = len(start_coord) # how many possible start points
         for i in range(len(start_coord)):
-            self.point_list.append(Point(i,(start_coord[i][0]-0.5)*width,(start_coord[i][1]-0.5)*height,'S',10,'Start',zero_pow))
+            self.point_list.append(Point(i,(start_coord[i][0]-0.5)*width,(start_coord[i][1]-0.5)*height,'S',10,'Start',epsilon))
         self.path_list = [] # for storing the list of paths
         
         # bound is the shape of the map
@@ -243,8 +243,8 @@ class DodmanGen():
         self.angle_no = angle_no
         # point_rad is the radius of each point
         self.point_rad = point_rad
-        # maximum possible 10^-zero_pow value before a number gets snapped to zero
-        self.zero_pow = zero_pow
+        # minimum possible value before a number gets snapped to zero
+        self.epsilon = epsilon
         # the random number generator
         self.rng = np.random.default_rng(seed)
         self.flip_results = flip_results
@@ -272,7 +272,7 @@ class DodmanGen():
         # generate the angle and vector
         angle = generate_angle(self.angle_no,self.rng)
         flip = self.flip_results[self.rng.integers(len(self.flip_results))]
-        vector = generate_vector(angle,self.zero_pow)
+        vector = generate_vector(angle,self.epsilon)
         this_roll.append((angle,flip))
         
         if printmid:
@@ -280,7 +280,7 @@ class DodmanGen():
             print('vector',vector)
             
         # create the maximum distance
-        maxd = self.bound.intersect_disp(self.point_list[self.current].coord(),vector,self.zero_pow)
+        maxd = self.bound.intersect_disp(self.point_list[self.current].coord(),vector,self.epsilon)
 
         # if that displacement will take us off the paper / will not exit the
         # point 'collision shape', add a point
@@ -331,7 +331,7 @@ class DodmanGen():
                     P2ac = self.point_list[P2a].coord()
                     P2bc = self.point_list[P2b].coord()
                     
-                    linetouch,touchdist = check_lines_intersect(P1ac,P1bc,P2ac,P2bc,self.zero_pow)
+                    linetouch,touchdist = check_lines_intersect(P1ac,P1bc,P2ac,P2bc,self.epsilon)
                     if linetouch:
                         # if it does find the distance between the point and line
                         if touchdist < closestdist:
@@ -354,7 +354,7 @@ class DodmanGen():
                         if printmid:
                             print('will collide with point %s (%s)'%(p,self.point_list[p].coord()))
                     # point intersections take precedence over line intersections
-                    elif minnumber(closestdist-touchdist,self.zero_pow) >= 0:
+                    elif minnumber(closestdist-touchdist,self.epsilon) >= 0:
                         if closestpoint[0] == 'Line':
                             closestpoint = ('Point',p)
                             closestdist = touchdist
@@ -371,7 +371,7 @@ class DodmanGen():
                                            self.point_list[self.current].coord()[0]+closestdist*vector[0],
                                            self.point_list[self.current].coord()[1]+closestdist*vector[1],
                                            flip,self.point_rad,
-                                           'Intersection',self.zero_pow))
+                                           'Intersection',self.epsilon))
                     cutlines,cutlinee = self.path_list[ind]
                     self.path_list[ind] = (cutlines,index)
                     self.path_list.append((index,cutlinee))
@@ -396,7 +396,7 @@ class DodmanGen():
                         self.point_list[index].flips += flip
             else:
                 index = len(self.point_list)
-                self.point_list.append(Point(index,newpoint[0],newpoint[1],flip,self.point_rad,'Termini',self.zero_pow))
+                self.point_list.append(Point(index,newpoint[0],newpoint[1],flip,self.point_rad,'Termini',self.epsilon))
                 self.path_list.append((self.current,index))
                 
             # change termini to node if there are more than 2 connecting paths
@@ -454,7 +454,7 @@ if __name__ == '__main__':
     point_rad = 20 # to prevent points from being too close to each other, size sets a minimum diameter
                 # this diameter is also used to 'round' path lengths and directions to points that fall
                 # within the circle
-    zero_pow = 11 # due to accuracy loss, any number that is less than 10^-zeropow will be converted straight to 0
+    epsilon = 10**-11 # Smallest non-zero value. Values smaller than this number will be converted to zero.
     rollno = 20 # how many times to flip your coin/ roll your dice
     #seed = None
     seed = None # the seed to use. If none the file will generate its own seed
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     dodgen = DodmanGen(width=width,height=height,
                        start_coord=start_coord,random_start=random_start,
                        map_shape=map_shape,angle_no=angle_no,point_rad=point_rad,
-                       zero_pow=zero_pow,seed=seed,flip_results=flip_results,
+                       epsilon=epsilon,seed=seed,flip_results=flip_results,
                        max_label_length=max_label_length)
     while len(dodgen.rolls_made) < 20:
         dodgen.flip_once(True)

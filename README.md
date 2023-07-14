@@ -32,7 +32,7 @@ The following values are to be set by the user before generation:
 |map_shape|string|What type of border will be used for the map. Values include 'square' and 'circle'.|
 |angle_no|integer|If zero, the angles will be generated via a uniform distribution. If any number above 0 the angles generated will be multiples of 360 degrees / angle_no (ex. if you place 12 it will only generate angles of 0, 30, 60, 90 ...)|
 |point_rad|integer or float|The radius of each point. If the shortest path between the path and projected path (the normal) is smaller than size, that point will be considered a possible candidate for snapping that projected path to.|
-|zero_pow|integer larger than 0|Accuracy is sometimes lost due to the irrational nature of the numbers. This value is used to help snap some very small numbers into zero.|
+|epsilon|any float larger than zero|When calclating, any value smaller than epsilon will be converted to zero.|
 |seed|integer or None|The random seed to use for generating your direction and coin flip/dice throw. Leaving the value as None will use the system's own random seed.|
 |flip_results|list of strings|The possible results of the flips.|
 |max_label_length|integer|Maximum number of flips a point can have.|
