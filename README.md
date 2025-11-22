@@ -6,11 +6,10 @@ You can find Alfred Valley's DODMAN [here](https://alfredvalley.itch.io/dodman) 
 # Prerequisites
 The python scripts were programmed in Python 3.7.
 
-The following packages are used by the scripts:
-* Numpy: Trigonometry functions, random number generator and multi-dimensional arrays to handle and simplify coordinate calculation.
-* Matplotlib: Map preview.
-* Pandas: Creating and reading csv files.
-* Bokeh: Package used to try and plot the map in a more interactive environment.
+The packages used can be found in the requirements.txt file. To install them just run the following command:
+```
+pip install -r requirements.txt
+```
 
 # Additional Features
 The python implementation used here also supports some features over Alfred Valley's DODMAN:
