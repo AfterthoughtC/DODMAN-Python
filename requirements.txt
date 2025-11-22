@@ -1,0 +1,4 @@
+bokeh
+matplotlib
+numpy
+pandas
