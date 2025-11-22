@@ -4,9 +4,9 @@ DODMAN is a map generation system designed by Alfred Valley for the Pleasure-not
 You can find Alfred Valley's DODMAN [here](https://alfredvalley.itch.io/dodman) and the jam submission page [here](https://itch.io/jam/pleasurecardrpg/rate/962103).
 
 # Prerequisites
-The python scripts were programmed in Python 3.7.
+The python scripts were written and ran in Python 3.7.
 
-The packages used can be found in the requirements.txt file. To install them just run the following command:
+The packages used can be found in the requirements.txt file. To install them just run the following command in command prompt:
 ```
 pip install -r requirements.txt
 ```
