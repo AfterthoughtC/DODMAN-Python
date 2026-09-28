@@ -89,6 +89,14 @@ class Vector2():
 
 
     def normalise(self,inplace: bool = False) -> Vector2 | None:
+        """Normalise the Vector
+
+        Args:
+            inplace (bool, optional): If False, the old Vector object remains unchanged and this function returns a new Vector. If True, the function returns nothing and the old Vector object gets changed. False Defaults to False.
+
+        Returns:
+            Vector2 | None: None if inplace is True. If False returns a normalised Vector2.
+        """
         length: float = self.get_length()
         x: float = self.x
         y: float = self.y

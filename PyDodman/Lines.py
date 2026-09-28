@@ -24,10 +24,23 @@ class LineEquation():
 
 
     def get_direction(self) -> Vector2:
+        """Returns the direction Vector of the equation
+
+        Returns:
+            Vector2: The direction Vector, Vector2(B,-A)
+        """
         return Vector2(self.B, -self.A)
 
 
     def get_x_range(self,y:float) -> list[float]:
+        """Returns the range of possible x values given the y value
+
+        Args:
+            y (float): The y value
+
+        Returns:
+            list[float]: A list containing 0, 1 or 2 float values. 2 float values means 'x is between these 2 values'. 1 float value means 'x is exactly this value'. 0 means that the Line Equation is invalid in some way.
+        """
         if self.A == 0 and self.B == 0:
             return []
         elif self.A == 0:
@@ -37,6 +50,14 @@ class LineEquation():
 
 
     def get_y_range(self,x:float) -> list[float]:
+        """Returns the range of possible y values given the x value
+
+        Args:
+            x (float): The x value
+
+        Returns:
+            list[float]: A list containing 0, 1 or 2 float values. 2 float values means 'y is between these 2 values'. 1 float value means 'y is exactly this value'. 0 means that the Line Equation is invalid in some way.
+        """
         if self.B == 0 and self.A == 0:
             return []
         elif self.B == 0:
