@@ -1,4 +1,1 @@
-bokeh
-matplotlib
-numpy
-pandas
+dotenv
